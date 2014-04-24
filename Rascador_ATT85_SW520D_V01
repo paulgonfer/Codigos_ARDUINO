@@ -1,0 +1,89 @@
+/*
+Nombre: Rascador_ATT85_SW520D_V01
+Descripcion: 
+-
+-
+Fecha: 20140320
+Version: V01
+TamaÃ±o: 1248 bytes
+Micro: ATTiny85
+Pineado:
+        01->RESET: Â¿Â¿Â¿Â¿ conectado a resisttencia ---[ 10K ]---> +5v ????
+        02->D3: Viene del sensor1 de INCLINACION
+        03->D4: Viene del sensor1 de INCLINACION
+        04->GND: GND
+        05->D0: 
+        06->D1: Salida que activa el rele de giro. Activado = giro a la Dcha. Desactivado = giro a la IZDA
+        07->D2: Salida que activa el rele de alimentaciÃ³n del motor mediante optoacoplador y TRIAC.
+        08->+5v: +5v
+
+Observaciones:
+- 
+-
+
+*/
+int valor = 1;
+int GIRO = 1;  //  Salida hacia el rele de GIRO
+int INTER = 2; //  Salida hacia el optoacoplador que controla al TRIAC
+int sensor1 = 3; // Entrada del sensor1
+int sensor2 = 4; // Entrada del sensor2
+int CASO = 0;
+void setup()
+{
+pinMode(sensor1, INPUT);
+pinMode(sensor2, INPUT);
+pinMode(GIRO, OUTPUT);    // GIRO
+pinMode(INTER, OUTPUT);    // INTERRUPTOR
+/*
+//------------------ Secuencia de INICIO
+      digitalWrite(GIRO, HIGH);delay(500);
+      digitalWrite(INTER, HIGH);delay(1500);
+      digitalWrite(INTER, LOW);delay(500);
+      digitalWrite(GIRO, LOW);
+      delay(2000);
+      digitalWrite(INTER, HIGH);delay(1500);
+      digitalWrite(INTER, LOW);delay(20);
+
+//------------------FIN Secuencia de INICIO
+*/
+digitalWrite(GIRO, LOW);
+digitalWrite(INTER, LOW);
+} 
+void loop()
+{
+delay(10);
+if (digitalRead(sensor1)==LOW || digitalRead(sensor2)==LOW){valor *= -1;}
+
+ if (valor == 1 && digitalRead(sensor1) == LOW){CASO = 1;}   // ---> Gira a la DCHA 
+ if (valor == 1 && digitalRead(sensor2) == LOW){CASO = 1;}   // ---> Gira a la DCHA
+ if (valor == -1 && digitalRead(sensor1) == LOW){CASO = 2;}    // <--- Gira a la IZDA
+ if (valor == -1 && digitalRead(sensor2) == LOW){CASO = 2;}    // <--- Gira a la IZDA    
+
+switch (CASO)
+{
+case 1://-----------------------------------
+while(digitalRead(sensor1)==LOW || digitalRead(sensor2)==LOW)  
+{  
+digitalWrite(GIRO, HIGH);    //enciende rele inversiÃ³n de giro
+delay(800);    //Tiempo entre encendido del rele y encendido del TRIAC
+digitalWrite(INTER, HIGH);    //activa interruptor
+delay(4000);  //  ----- TIEMPO del interruptor encendido y motor GIRANDO despues de nivelarse
+}
+digitalWrite(INTER, LOW);    //--- desactiva el INTERRUPTOR
+delay(800);    //Tiempo entre apagado del rele y apagado del TRIAC
+digitalWrite(GIRO, LOW);    //apaga rele inversiÃ³n de giro
+delay(1000);    //Tiempo de pausa DESPUES DEL GIRO EN UN SENTIDO
+CASO=0; delay(50); break;
+
+case 2://-----------------------------------
+while(digitalRead(sensor1)==LOW || digitalRead(sensor2)==LOW)  
+{
+digitalWrite(GIRO, LOW);    // NO enciende rele inversiÃ³n de giro
+digitalWrite(INTER, HIGH);    //activa interruptor
+delay(4000);  //  ----- TIEMPO del interruptor encendido y motor GIRANDO despues de nivelarse
+}
+digitalWrite(INTER, LOW);    //--- desactiva el INTERRUPTOR
+delay(1000);    //Tiempo de pausa DESPUES DEL GIRO EN UN SENTIDO
+CASO=0; delay(50); break;
+} // --- Switch
+} // --- Loop
