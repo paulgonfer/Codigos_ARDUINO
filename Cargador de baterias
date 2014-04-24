@@ -1,0 +1,69 @@
+/*
+Nombre: Voltimetro_para_Cargador _de_Baterias_Ver01
+Fecha: 20140319
+Version: V01
+TamaÃ±o: 2614 bytes
+Micro: ATTiny45/85
+Pineado:
+        01-> A0: Entrada analogica para medir tension de la BaterÃ­a primaria
+        02-> D3: Salida para LED VERDE
+        03-> D4: Salida para LED ROJO
+        04-> GND
+        05-> D0: 
+        06-> D1:
+        07-> D2: Salida para el RELE
+        08-> +5v
+*/
+
+float lectura;
+float volt = 0;    //Entrada analÃ³gica:A0 - Pin 1 del Attiny85
+  int led1 = 4;    //Salida digital:2 - Pin 7 del Attiny85 (LED ROJO)
+  int led2 = 3;    //Salida digital:3 - Pin 2 del Attiny85 (LED VERDE)
+  int rele = 2;    //Salida digital:4 - Pin 3 del Attiny85
+  int a = 0;
+  int CASO = 0;
+
+void setup() {
+pinMode(led1,OUTPUT);pinMode(led2,OUTPUT);pinMode(rele,OUTPUT);digitalWrite(rele, LOW);
+delay(1000);
+for (int x = 0; x < 3; x++){digitalWrite(led1, HIGH); delay(500);digitalWrite(led1, LOW); delay(25);}
+for (int x = 0; x < 3; x++){digitalWrite(led1, HIGH); digitalWrite(led2, HIGH); 
+delay(500);digitalWrite(led1, LOW); digitalWrite(led2, LOW); delay(25);}
+for (int x = 0; x < 3; x++){digitalWrite(led2, HIGH); delay(500);digitalWrite(led2, LOW); delay(25);}
+delay(600);
+}
+void loop() {
+lectura=analogRead(0);
+volt = ((5*float(lectura))/1024);
+delay(50);
+/*  3.38 equivalen a 13.50 voltios de entrada (conecta relÃ© y comienza la carga)
+    3.15 equivalen a 12.50 voltios de entrada (desconecta relÃ© y se interrumpe la carga) */
+
+if (volt < 3.15 && a == 0){CASO = 1;}
+if (volt < 3.15 && a == 1){CASO = 1;}
+if (volt > 3.15 && volt < 3.38 && a == 0){CASO = 1;}
+if (volt > 3.15 && volt < 3.38 && a == 1){CASO = 3;}
+if (volt > 3.38 && a == 0){CASO = 2;}
+if (volt > 3.38 && a == 1){CASO = 3;}
+
+switch (CASO)
+{
+case 1://--------------------------------------- NO esta cargando
+digitalWrite(rele, LOW);digitalWrite(led1, HIGH);digitalWrite(led2, LOW);
+CASO=0;delay(50);a = 0;break;    
+
+case 2://--------------------------------------- Secuencia PREVIA a la CARGA
+digitalWrite(rele, LOW);digitalWrite(led1, LOW);
+for (int x = 0; x < 4; x++){
+digitalWrite(led1, HIGH); digitalWrite(led2, HIGH); delay(900);  //on
+digitalWrite(led1, LOW); digitalWrite(led2, LOW); delay(25);delay(5);}
+CASO=0;delay(50);a = 1;break;  
+
+case 3://--------------------------------------- CARGANDO
+digitalWrite(led1, LOW);digitalWrite(rele, HIGH);digitalWrite(led2, HIGH); delay(975);digitalWrite(led2, LOW);
+delay(25); CASO=0;delay(50);
+//a = 0;
+break;
+}//caso
+}//loop
+
