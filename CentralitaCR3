@@ -1,0 +1,261 @@
+/*
+Nombre: CENTRALITA_CR3_V03
+Descripcion: 
+  Se toma una muestra del voltaje de la bateria y si la tension esta por encima de los 10,6 voltios, realiza...
+  
+  Si la tension de bateria en inferior de 10,6 v ...
+  
+  
+  
+Fecha: 20130827
+Version: V03
+TamaÃ±o: 3512 bytes
+Micro: ATMEGA328 / ATMEGA328
+Pineado:
+        01->RESET: conectado a resisttencia ---[ 10K ]---> +5v
+        02->0:
+        03->1:
+        04->2:
+        05->3:
+        06->4:
+        07->VCC: +5v
+        08->GND: GND
+        09->XTAL1: cristal de 16Mhz
+        10->XTAL2: cristal de 16Mhz
+        11->5:
+        12->6:
+        13->7:
+        14->8:
+        15->9: Salida LED ROJO
+        16->10: Salida LED VERDE
+        17->11: Salida Zumbador
+        18->12: Salida Rele intermitentes
+        19->13: Salida Rele SAL+12v
+        20->AVCC: ---
+        21->AREF: ---
+        22->GND: GND
+        23->A0: 
+        24->A1:
+        25->A2:
+        26->A3: Entrada medida de tension
+        27->A4: Entrada FRENO de MANO
+        28->A5: Entrada SeÃ±al de Rampa Fuera 
+Observaciones:
+- Se utiliza un divisor de tensiÃ³n de 3 resistencias de 470R. Se toma una muestra de la primera y se inyecta en A3.
+-
+-
+-
+*/
+int pinvoltaje = A3;
+int valor = 0;
+float v = 0.00;
+int LedVerde = 10;
+int LedRojo = 9;
+int fm = A4;
+int srf = A5;
+int sal = 13;
+int inter = 12;
+int z = 11;
+int CASO = 0;
+int sec1 = 0;
+int w = 0;
+
+void setup() 
+{
+//Serial.begin(9600);
+pinMode(pinvoltaje,INPUT);
+pinMode(LedVerde,OUTPUT);
+pinMode(LedRojo,OUTPUT);
+
+pinMode(fm,INPUT);
+pinMode(srf,INPUT);
+pinMode(sal,OUTPUT);
+pinMode(inter,OUTPUT);
+pinMode(z,OUTPUT);
+}
+
+void loop()
+{
+valor = analogRead(pinvoltaje);
+v = valor * 15.0 / 1024.0;
+v = v + 0.06;
+
+if (digitalRead(fm) == LOW && digitalRead(srf) == HIGH){CASO = 1;}  // + freno de mano puesto + la rampa esta dentro
+if (digitalRead(fm) == LOW && digitalRead(srf) == LOW){CASO = 2;}  //  +  freno de mano puesto + la rampa esta fuera
+if (digitalRead(fm) == HIGH && digitalRead(srf) == HIGH){CASO = 3;}  // + freno de mano quitado + la rampa esta dentro
+if (digitalRead(fm) == HIGH && digitalRead(srf) == LOW){CASO = 4;}  // + freno de mano quitado + la rampa esta fuera
+
+switch (CASO)
+{
+// ------------------------------------- freno de mano puesto + la rampa esta dentro
+case 1:
+if (v > 10.60)
+{
+  digitalWrite(LedRojo, LOW);
+  digitalWrite(LedVerde, LOW);
+  digitalWrite(sal, LOW);
+  digitalWrite(inter, LOW);
+  digitalWrite(z, LOW);
+}
+  else
+  {
+  digitalWrite(sal, LOW);
+  digitalWrite(inter, LOW);
+   
+  digitalWrite(LedRojo, HIGH);
+  digitalWrite(LedVerde, LOW);
+  digitalWrite(z, HIGH);
+  delay(280);
+  digitalWrite(LedRojo, LOW);
+  digitalWrite(LedVerde, HIGH);
+  digitalWrite(z, LOW);
+  delay(280);  
+  }  
+CASO=0;
+//Serial.println(v);
+delay(50);
+break;
+// ------------------------------------- freno de mano puesto + la rampa esta fuera 
+case 2:
+if (v > 10.60)
+{
+  digitalWrite(LedVerde, HIGH);  // Led VERDE encendido  
+  digitalWrite(LedRojo, LOW);  // Led ROJO apagado
+  digitalWrite(sal, LOW);  // Hay 12v en la SALIDA  
+    for (int i=0; i<15; i++)
+      {
+      digitalWrite(z, HIGH);
+      delay(50);
+      digitalWrite(z, LOW);
+      delay(50);
+      }
+
+  while(digitalRead(fm) == LOW && digitalRead(srf) == LOW && (v > 10.60))//Freno de mano puesto + rampa fuera
+  {
+    for (int j=0; j<5; j++)
+    { 
+    digitalWrite(inter, HIGH);  // intermitente activado
+    delay(280);
+    digitalWrite(inter, LOW);
+    delay(280);
+    }
+
+valor = analogRead(pinvoltaje);
+v = valor * 15.0 / 1024.0;
+v = v + 0.06;      
+
+      digitalWrite(z, HIGH);
+      delay(70);
+      digitalWrite(z, LOW);
+      delay(30);
+         
+      digitalWrite(inter, HIGH);
+      digitalWrite(z, HIGH);
+      delay(70);
+      digitalWrite(z, LOW);
+      delay(30);
+         
+      digitalWrite(z, HIGH);
+      delay(70);
+      digitalWrite(z, LOW);
+      delay(30);
+      }
+}
+else
+{
+  digitalWrite(sal,LOW);  //HAY 12v en la SALIDA
+  digitalWrite(LedRojo, HIGH);  // Led ROJO intermitente
+  digitalWrite(LedVerde, LOW);  // Led VERDE intermitente
+  digitalWrite(inter, HIGH);
+  digitalWrite(z, HIGH);  //zumbador intermitente
+  delay(280);
+
+  digitalWrite(LedRojo, LOW);  // Led ROJO intermitente
+  digitalWrite(LedVerde, HIGH);  // Led VERDE intermitente
+  digitalWrite(inter, LOW);
+  digitalWrite(z, LOW);  //zumbador intermitente
+  delay(280);
+}
+CASO=0;
+delay(50);
+break;
+// ------------------------------------- freno de mano quitado + la rampa esta dentro 
+case 3:
+if (v > 10.60)
+{
+  digitalWrite(LedRojo, LOW);  // Led ROJO apagado
+  digitalWrite(LedVerde, LOW);  // Led VERDE apagado
+  digitalWrite(sal, HIGH);  // No hay 12v en la SALIDA
+  digitalWrite(inter, LOW);  // Intermitencia apagada
+  digitalWrite(z, LOW);  // Zumbador apagado
+}
+else
+{
+  digitalWrite(sal,HIGH);  // No hay 12v en la SALIDA
+  digitalWrite(inter,LOW);
+  
+  digitalWrite(LedRojo, HIGH);  // Led ROJO intermitente
+  digitalWrite(LedVerde, LOW);  // Led VERDE intermitente
+  digitalWrite(z, HIGH);  //zumbador intermitente
+  delay(280);
+  digitalWrite(LedRojo, LOW);  // Led ROJO intermitente
+  digitalWrite(LedVerde, HIGH);  // Led VERDE intermitente
+  digitalWrite(z, LOW);  //zumbador intermitente
+  delay(280);
+}
+CASO=0;
+delay(50);
+break;
+// ------------------------------------- freno de mano quitado + la rampa esta fuera 
+case 4:
+if (v > 10.60)
+{
+  digitalWrite(LedVerde, LOW);  // Led VERDE apagado
+  digitalWrite(sal, HIGH);  // No hay 12v en la SALIDA
+    
+  digitalWrite(LedRojo, HIGH);  // Led ROJO intermitente
+  digitalWrite(inter, HIGH);
+  digitalWrite(z, HIGH);  //zumbador intermitente
+  delay(70);
+  digitalWrite(z, LOW);
+  delay(30);
+  digitalWrite(z, HIGH);
+  delay(70);
+  digitalWrite(z, LOW);
+  delay(90);
+  
+  digitalWrite(LedRojo, LOW);  // Led ROJO intermitente
+  digitalWrite(inter, LOW);
+  digitalWrite(z, HIGH);  //zumbador intermitente
+  delay(70);
+  digitalWrite(z, LOW);
+  delay(30);
+  digitalWrite(z, HIGH);
+  delay(70);
+  digitalWrite(z, LOW);
+  delay(90); 
+}
+else
+{
+  digitalWrite(sal,HIGH);  // No hay 12v en la SALIDA
+
+  digitalWrite(LedRojo, HIGH);  // Led ROJO intermitente
+  digitalWrite(LedVerde, LOW);  // Led VERDE intermitente
+  digitalWrite(inter,HIGH);
+  digitalWrite(z, HIGH);  //zumbador intermitente
+  delay(280);
+  
+  digitalWrite(LedRojo, LOW);  // Led ROJO intermitente
+  digitalWrite(LedVerde, HIGH);  // Led VERDE intermitente
+  digitalWrite(inter, LOW);
+  digitalWrite(z, LOW);  //zumbador intermitente
+  delay(280);
+}
+
+CASO=0;
+delay(50);
+break;
+}
+}
+
+
