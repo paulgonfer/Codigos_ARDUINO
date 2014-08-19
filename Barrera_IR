@@ -1,0 +1,184 @@
+/*   
+D0: 
+D1: 
+D2: a RS Display LCD (pin 4)                         
+D3: a E Display LCD (pin 6)
+D4: a DB4 Display LCD (pin 11)
+D5: a DB5 Display LCD (pin 12)
+D6: a DB6 Display LCD (pin 13)
+D7: a DB7 Display LCD (pin 14)
+D8: LED de ENTRADA
+D9: LED de SALIDA
+D10: a CS del modulo SD-CARD
+D11: a MOSI del modulo SD-CARD
+D12: a MISO del modulo SD-CARD
+D13: a SCK del modulo SD-CARD
+SDA: 
+SCL: 
+A0: (pin 14) LED OK                         
+A1: Sensor Infrarrojo ENTRADA
+A2: Sensor Infrarrojo SALIDA
+A3: 3-PULSADORES
+A4: SDA en Arduino ----> a SDA del modulo RTC-1307
+A5: SCL en Arduino ----> a SCL del modulo RTC-1307
+*/
+#include <Wire.h>  // Incluye la libreria Wire
+#include "RTClib.h" // Incluye la libreria RTClib
+RTC_DS1307 RTC; // Crea el objeto RTC
+#include <SPI.h>
+#include <SD.h>
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(2, NULL, 3, 4, 5, 6, 7); 
+const int chipSelect = 10; //Pin donde va conectado "CS" de la SD-CARD
+
+int IRentrada = A1; 
+int IRsalida = A2; 
+int E = 0;
+int S = 0;
+int n = 0;
+int suma = 0;
+int resta = 0;
+int ENT = 0;
+int SAL = 0;
+
+int LED1 = 14;//pin A0
+
+int LEDentrada = 8;      // led indicador ENTRADA
+int LEDsalida = 9;      // led indicador SALIDA
+
+//int sensorValent = 0;  
+//int sensorValsal = 0; 
+
+void setup() { 
+Serial.begin(9600); 
+lcd.begin(16,2);
+lcd.clear();
+pinMode(chipSelect, OUTPUT);//Pin donde va conectado "CS" de la SD-CARD
+
+Wire.begin(); // Establece la velocidad de datos del bus I2C
+RTC.begin(); // Establece la velocidad de datos del RTC
+RTC.writeSqwPinMode(SquareWave1HZ); //Saca negativo por el pin7 a 1Hz.
+
+if (!SD.begin(chipSelect)) {
+    lcd.setCursor(0,0);
+    lcd.print("SD-ERROR");
+    delay(300);
+    //Serial.println("SD-ERROR DE INICIALIZACION");
+    return;} 
+    //Serial.println("initialization OK");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Tarjeta SD: OK"); delay(2000);
+    lcd.clear();
+//}
+
+
+
+pinMode(LEDentrada, OUTPUT);
+pinMode(LEDsalida, OUTPUT);
+pinMode(LED1, OUTPUT);
+}
+ 
+void loop() {
+//DateTime now = RTC.now(); // Obtiene la fecha y hora del RTC  //prueba
+//lcd.setCursor(10,1); 
+//lcd.print(n);   
+
+
+int analogValue = analogRead(A3); 	// Lee el valor de la entrada analógica A3
+analogValue = map(analogValue,0,1023,0,4); 	// Cambiamos el valor de rango
+switch (analogValue){
+    case 1:  ENTRA(); delay(100); break;
+    case 2:  SENSORES(); delay(100); break;
+    case 3:  SALE(); delay(100); break;
+} //------------- fin Switch    
+
+if(digitalRead(IRentrada) == LOW){digitalWrite(LEDentrada, HIGH); E=1; }
+  else {digitalWrite(LEDentrada, LOW); E=0;}
+if(digitalRead(IRsalida) == LOW){digitalWrite(LEDsalida, HIGH); S=1; }
+  else {digitalWrite(LEDsalida, LOW); S=0;}
+/*
+if(sensorValent > 910 ){
+  digitalWrite(LEDentrada, HIGH); E=1; }
+  else {digitalWrite(LEDentrada, LOW); E=0;}
+if(sensorValsal > 910 ){
+  digitalWrite(LEDsalida, HIGH);  S=1; }
+  else {digitalWrite(LEDsalida, LOW); S=0;}
+*/
+if(E == 0 && S == 0 ){suma=0; resta=0;}
+if(E == 1 && S == 0 ){suma=1;}
+if(E == 1 && S == 1 ){CALCULAR();}
+if(E == 0 && S == 1 ){resta=1;}
+delay(20);
+}//------------------------------------ Fin LOOP
+
+void CALCULAR(){//--------------------- CALCULAR
+if(suma == 1){ENTRA();} 
+if(resta == 1){SALE();} 
+}//------------------------------------ Fin CALCULAR
+void ENTRA(){//------------------------------------------------------- ENTRA
+n = n + 1; ENT=ENT++; suma=0;
+lcd.clear(); lcd.setCursor(10,1); lcd.print(n);   
+
+DateTime now = RTC.now(); // Obtiene la fecha y hora del RTC
+String dataString = ""; // Vacia el String para evitar problemas    
+  File dataFile = SD.open("datos.txt", FILE_WRITE);
+  dataString += String(now.day(), DEC)+ String('/')+
+                String(now.month(), DEC)+ String('/')+
+                String(now.year(), DEC)+ String(' ')+
+                String(now.dayOfWeek(), DEC)+ String(' ')+
+                String(now.hour(), DEC)+ String(':')+
+                String(now.minute(), DEC)+ String(':')+
+                String(now.second(), DEC)+ String(' ')+
+                String('E')+ String(' ')+
+                //String('1')+ String(' ')+
+                //String('0')+ String(' ')+
+                String(n)+ String(' ')+
+                String(ENT)+ String(' ')+
+                String(SAL)+ String(' ');
+                
+digitalWrite(LED1, LOW); digitalWrite(LED1, HIGH); delay(25); digitalWrite(LED1, LOW);
+                
+   if (dataFile) {dataFile.println(dataString); delay(10);
+                  dataFile.close();
+                  //Serial.println(dataString);
+                  } else {//Serial.println("error abriendo DATOS.txt");
+                          }
+}//------------------------------------ Fin ENTRA 
+
+void SALE(){//------------------------------------------------------- SALE
+n = n - 1; SAL=SAL++; resta=0;
+lcd.clear(); lcd.setCursor(10,1); lcd.print(n);   
+
+DateTime now = RTC.now(); // Obtiene la fecha y hora del RTC
+String dataString = ""; // Vacia el String para evitar problemas    
+  File dataFile = SD.open("datos.txt", FILE_WRITE);
+  dataString += String(now.day(), DEC)+ String('/')+
+                String(now.month(), DEC)+ String('/')+
+                String(now.year(), DEC)+ String(' ')+
+                String(now.dayOfWeek(), DEC)+ String(' ')+
+                String(now.hour(), DEC)+ String(':')+
+                String(now.minute(), DEC)+ String(':')+
+                String(now.second(), DEC)+ String(' ')+
+                String('S')+ String(' ')+
+                //String('0')+ String(' ')+
+                //String('1')+ String(' ')+
+                String(n)+ String(' ')+
+                String(ENT)+ String(' ')+
+                String(SAL)+ String(' ');
+
+digitalWrite(LED1, LOW); digitalWrite(LED1, HIGH); delay(25); digitalWrite(LED1, LOW);   
+   
+   if (dataFile) {dataFile.println(dataString); delay(10);
+                  dataFile.close();
+                  //Serial.println(dataString);
+                  } else {//Serial.println("error abriendo DATOS.TXT");
+                          }
+}//------------------------------------ Fin SALE   
+
+void SENSORES(){
+lcd.clear(); 
+lcd.setCursor(1,0); lcd.print("ENT");lcd.setCursor(8,0); lcd.print("SAL");
+lcd.setCursor(1,1); lcd.print(ENT);lcd.setCursor(8,1); lcd.print(SAL);   
+delay(100); 
+}//------------------------------------ Fin SENSORES  
