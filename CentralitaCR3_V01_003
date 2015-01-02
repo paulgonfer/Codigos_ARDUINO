@@ -1,15 +1,12 @@
 /*
-Nombre: CENTRALITA_CR3_V03
+Nombre: CENTRALITA_CR3_V01_003
 Descripcion: 
   Se toma una muestra del voltaje de la bateria y si la tension esta por encima de los 10,6 voltios, realiza...
-  
   Si la tension de bateria en inferior de 10,6 v ...
   
-  
-  
-Fecha: 20130827
-Version: V03
-TamaÃ±o: 3512 bytes
+Fecha: 2013-08-27
+Version: V01
+Tamaño: 3512 bytes
 Micro: ATMEGA328 / ATMEGA328
 Pineado:
         01->RESET: conectado a resisttencia ---[ 10K ]---> +5v
@@ -39,9 +36,9 @@ Pineado:
         25->A2:
         26->A3: Entrada medida de tension
         27->A4: Entrada FRENO de MANO
-        28->A5: Entrada SeÃ±al de Rampa Fuera 
+        28->A5: Entrada Señal de Rampa Fuera 
 Observaciones:
-- Se utiliza un divisor de tensiÃ³n de 3 resistencias de 470R. Se toma una muestra de la primera y se inyecta en A3.
+- Se utiliza un divisor de tensión de 3 resistencias de 470R. Se toma una muestra de la primera y se inyecta en A3.
 -
 -
 -
@@ -60,9 +57,7 @@ int CASO = 0;
 int sec1 = 0;
 int w = 0;
 
-void setup() 
-{
-//Serial.begin(9600);
+void setup(){
 pinMode(pinvoltaje,INPUT);
 pinMode(LedVerde,OUTPUT);
 pinMode(LedRojo,OUTPUT);
@@ -74,8 +69,7 @@ pinMode(inter,OUTPUT);
 pinMode(z,OUTPUT);
 }
 
-void loop()
-{
+void loop(){
 valor = analogRead(pinvoltaje);
 v = valor * 15.0 / 1024.0;
 v = v + 0.06;
@@ -112,7 +106,6 @@ if (v > 10.60)
   delay(280);  
   }  
 CASO=0;
-//Serial.println(v);
 delay(50);
 break;
 // ------------------------------------- freno de mano puesto + la rampa esta fuera 
@@ -251,11 +244,9 @@ else
   digitalWrite(z, LOW);  //zumbador intermitente
   delay(280);
 }
-
 CASO=0;
 delay(50);
 break;
 }
 }
-
 
