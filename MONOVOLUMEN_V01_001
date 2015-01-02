@@ -1,0 +1,270 @@
+//Nombre del fichero: MONOVOLUMEN_V01_001
+//Fecha: 2013-08-18
+//Version: V01
+//Tamaño: 3450 bytes
+//Micro: Atmega328
+//Descripcion: Version con entradas señal negativa...
+
+//ENTRADAS
+//int spa = A0;   //señal de puerta abierta en pin->A0
+int spc = A1;   //señal de puerta cerrada en pin->A1
+int srd = A2;   //senal de rampa dentro en pin->A2
+int srf = A3;   //señal de rampa fuera en pin->A3
+int ssar = A4;  //señal de suspension arriba en pin->A4 
+int ssab = A5;  //señal de suspension abajo  en pin->A5
+//int con = 1;  //señal del contacto (pin->D1)
+int sfm = 2;    //señal del freno de mano (pin->D2)
+int abrir = 3;  //orden de ABRIR (pin ->D3) enviada por mando a distancia  
+int cerrar = 4; //orden de CERRAR (pin ->D4) enviada por mando a distancia
+
+//SALIDAS
+int ar = 7;    //salida para abrir rampa (pin ->D7)
+int cr = 8;    //salida para cerrar rampa (pin ->D8)
+int bs = 9;    //salida para bajar suspension (pin ->D9)
+int ss = 10;   //salida para subir suspension (pin ->D10) 
+int BEEP = 12; //salida para pitido (pin ->D12)
+int CASO = 0;
+
+void setup()
+{
+//pinMode(spa,INPUT);
+pinMode(spc,INPUT);
+pinMode(srd,INPUT);
+pinMode(srf,INPUT);
+pinMode(ssar,INPUT);
+pinMode(ssab,INPUT);
+//pinMode(con,INPUT);
+pinMode(sfm,INPUT);
+pinMode(abrir,INPUT);
+pinMode(cerrar,INPUT);
+pinMode(ar,OUTPUT); 
+pinMode(cr,OUTPUT); 
+pinMode(bs,OUTPUT);
+pinMode(ss,OUTPUT);
+pinMode(BEEP,OUTPUT);
+
+digitalWrite(BEEP, HIGH);
+  delay(80);
+  digitalWrite(BEEP, LOW);
+  delay(50);
+digitalWrite(BEEP, HIGH);
+  delay(80);
+  digitalWrite(BEEP, LOW);
+  delay(600);
+digitalWrite(BEEP, HIGH);
+  delay(80);
+  digitalWrite(BEEP, LOW);
+  delay(50);
+digitalWrite(BEEP, HIGH);
+  delay(80);
+  digitalWrite(BEEP, LOW);
+}
+
+void loop(){
+digitalWrite(BEEP, LOW);
+
+if (digitalRead(srd) == LOW && digitalRead(ssar) == LOW && digitalRead(abrir) == LOW){CASO = 1;}  //Abre RAMPA
+if (digitalRead(srd) == LOW && digitalRead(ssab) == LOW && digitalRead(cerrar) == LOW){CASO = 3;}  //Sube SUSPENSION
+if (digitalRead(srf) == LOW && digitalRead(ssar) == LOW && digitalRead(abrir) == LOW){CASO = 2;}  //Baja SUSPENSION
+if (digitalRead(srf) == LOW && digitalRead(ssab) == LOW && digitalRead(cerrar) == LOW){CASO = 3;}  //Sube SUSPENSION
+if (digitalRead(srf) == LOW && digitalRead(ssar) == LOW && digitalRead(cerrar) == LOW){CASO = 4;}  //Cierra RAMPA
+
+if (digitalRead(srd) == HIGH && digitalRead(srf) == HIGH && digitalRead(abrir) == LOW){CASO = 1;}  //Abre RAMPA
+if (digitalRead(srd) == HIGH && digitalRead(srf) == HIGH && digitalRead(cerrar) == LOW){CASO = 4;}  //Cierra RAMPA
+if (digitalRead(ssar) == HIGH && digitalRead(ssab) == HIGH && digitalRead(abrir) == LOW){CASO = 2;}  //Baja SUSPENSION
+if (digitalRead(ssar) == HIGH && digitalRead(ssab) == HIGH && digitalRead(cerrar) == LOW){CASO = 3;}  //Sube SUSPENSION
+
+if (digitalRead(srd) == HIGH && digitalRead(srf) == HIGH && digitalRead(ssar) == HIGH && digitalRead(ssab) == HIGH && digitalRead(abrir) == LOW){CASO = 8;}// AR+BS
+if (digitalRead(srd) == HIGH && digitalRead(srf) == HIGH && digitalRead(ssar) == HIGH && digitalRead(ssab) == HIGH && digitalRead(cerrar) == LOW){CASO = 9;}// SS+CR
+
+if (digitalRead(sfm) == HIGH && digitalRead(srd) != LOW){CASO = 7;}  // Cierra la RAMPA
+if (digitalRead(sfm) == HIGH && digitalRead(ssar) != LOW){CASO = 6;}  // Sube la SUSPENSION
+if (digitalRead(sfm) == HIGH && digitalRead(abrir) == LOW){CASO = 5;} // NO haca nada y pita
+if (digitalRead(sfm) == HIGH && digitalRead(cerrar) == LOW){CASO = 5;}// NO haca nada y pita
+
+switch (CASO)
+{
+case 1://-------------------> ABRE RAMPA
+  digitalWrite(BEEP, HIGH);
+  delay(400);
+  digitalWrite(BEEP, LOW);
+  while(digitalRead(srf) == HIGH || digitalRead(abrir) == LOW)
+  {
+  digitalWrite(ar, HIGH);  //SE ABRE LA RAMPA
+  digitalWrite(cr, LOW);
+  }
+  digitalWrite(ar,LOW);  //no movemos la rampa
+  digitalWrite(cr,LOW);
+  digitalWrite(BEEP, HIGH);
+  delay(100);
+  digitalWrite(BEEP, LOW);
+  CASO=0;
+  delay(50);
+break;
+  
+case 2://-------------------> BAJA SUSPENSION
+    digitalWrite(BEEP, HIGH);
+    delay(400);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(ssab) == HIGH || digitalRead(abrir) == LOW) //hasta que la SUSPENSION baje del todo
+    {
+    digitalWrite(bs, HIGH);    //SE BAJA SUSPENSION
+    digitalWrite(ss, LOW);
+    }
+    digitalWrite(bs,LOW);    //no movemos la suspension
+    digitalWrite(ss,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(100);
+    digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 3://-------------------> SUBE SUSPENSION
+    digitalWrite(BEEP, HIGH);
+    delay(400);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(ssar) == HIGH || digitalRead(cerrar) == LOW)  //hasta que la SUSPENSION suba del todo
+    {
+    digitalWrite(ss, HIGH);    //SE SUBE LA SUSPENSION
+    digitalWrite(bs, LOW);
+    }
+    digitalWrite(bs,LOW);    //no movemos la suspension
+    digitalWrite(ss,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(100);
+    digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 4://-------------------> CIERRA RAMPA
+    digitalWrite(BEEP, HIGH);
+    delay(400);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(srd) == HIGH || digitalRead(cerrar) == LOW)  //hasta que la rampa se cierre del todo
+    {
+    digitalWrite(cr, HIGH);    //SE CIERRA LA RAMPA
+    digitalWrite(ar, LOW);
+    }
+    digitalWrite(cr,LOW);    //no movemos la rampa
+    digitalWrite(ar,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(100);
+    digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 5:// -------------------> NO HACE NADA Y PITA
+    while(digitalRead(abrir) == LOW)  //hasta que 
+    {
+    digitalWrite(BEEP, HIGH);
+    delay(30);
+    digitalWrite(BEEP, LOW);
+    delay(30);
+    }
+    CASO=0;
+    delay(50);
+break;
+
+case 6://-------------------> SUBE SUSPENSION
+    while(digitalRead(ssar) == HIGH)  //hasta que la SUSPENSION suba del todo
+    {
+    digitalWrite(ss, HIGH);    //SE SUBE LA SUSPENSION
+    digitalWrite(bs, LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(30);
+    digitalWrite(BEEP, LOW);
+    delay(30);  
+    }
+    digitalWrite(bs,LOW);    //no movemos la suspension
+    digitalWrite(ss,LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 7://-------------------> CIERRA RAMPA
+    while(digitalRead(srd) == HIGH)  //hasta que la rampa se cierre del todo
+    {
+    digitalWrite(cr, HIGH);    //SE CIERRA LA RAMPA
+    digitalWrite(ar, LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(30);
+    digitalWrite(BEEP, LOW);
+    delay(30);
+    }
+    digitalWrite(cr,LOW);    //no movemos la rampa
+    digitalWrite(ar,LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 8://-------------------> abre rampa y baja suspension
+    digitalWrite(BEEP, HIGH);
+    delay(300);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(srf) == HIGH || digitalRead(abrir) == LOW)
+    {
+    digitalWrite(ar, HIGH);  //SE ABRE LA RAMPA
+    digitalWrite(cr, LOW);
+    }
+    digitalWrite(ar,LOW);  //no movemos la rampa
+    digitalWrite(cr,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(80);
+    digitalWrite(BEEP, LOW);
+    
+    digitalWrite(BEEP, HIGH);
+    delay(300);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(ssab) == HIGH || digitalRead(abrir) == LOW) //hasta que la SUSPENSION baje del todo
+    {
+    digitalWrite(bs, HIGH);    //SE BAJA SUSPENSION
+    digitalWrite(ss, LOW);
+    }
+    digitalWrite(bs,LOW);    //no movemos la suspension
+    digitalWrite(ss,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(80);
+    digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;
+
+case 9://------------------->  sube suspension y cierra rampa
+    digitalWrite(BEEP, HIGH);
+    delay(300);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(ssar) == HIGH || digitalRead(cerrar) == LOW)  //hasta que la SUSPENSION suba del todo
+    {
+    digitalWrite(ss, HIGH);    //SE SUBE LA SUSPENSION
+    digitalWrite(bs, LOW);
+    }
+    digitalWrite(bs,LOW);    //no movemos la suspension
+    digitalWrite(ss,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(80);
+    digitalWrite(BEEP, LOW);
+  
+    digitalWrite(BEEP, HIGH);
+    delay(300);
+    digitalWrite(BEEP, LOW);
+    while(digitalRead(srd) == HIGH || digitalRead(cerrar) == LOW)  //hasta que la rampa se cierre del todo
+    {
+    digitalWrite(cr, HIGH);    //SE CIERRA LA RAMPA
+    digitalWrite(ar, LOW);
+    }
+    digitalWrite(cr,LOW);    //no movemos la rampa
+    digitalWrite(ar,LOW);
+    digitalWrite(BEEP, HIGH);
+    delay(80);
+    digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;
+
+}
+
+}
+
