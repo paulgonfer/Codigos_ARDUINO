@@ -1,0 +1,336 @@
+//Nombre del fichero: QUAD_con_RAMPA_V01_001
+//Fecha: 2013-08-18
+//Version: V01
+//Tamaño: 3644 bytes
+//Micro: Atmega328
+//Descripcion: 
+
+
+// ENTRADAS
+int FM = 5; // FRENO de MANO
+int SRD = 3; // Señal de RAMPA DENTRO
+int SRF = 4; // Señal de RAMPA FUERA
+int susp = A0; // Entrada conmutador posicion suspension
+int SDAR = A5; // Suspensión delantera ARRIBA
+int SDME = A4; // Suspensión delantera en MEDIO
+int SDAB = A3; // Suspensión delantera ABAJO
+int STAR = 0; // Suspensión TRASERA ARRIBA
+int STME = 1; // Suspensión TRASERA en MEDIO
+int STAB = 2; // Suspensión TRASERA ABAJO
+
+int abrir = 13; // Orden de abrir rampa	
+int cerrar = 12; // Orden de cerrar rampa
+int PAR = 0; // Entrada Pulsador para suspensión ARRIBA  ??????????????????????????????????????????????????????
+int PME = 0; // Entrada Pulsador para suspensión en MEDIO??????????????????????????????????????????????????????
+int PAB = 0; // Entrada Pulsador para suspensión ABAJO??????????????????????????????????????????????????????
+	
+// SALIDAS
+int AR = 9; // Salida para Abrir RAMPA
+int CR = 8; // Salida para Cerrar RAMPA
+int EVSSD = 11; // Salida a electrovalvula para subir la SUSP DELANTERA
+int EVBSD = 10; // Salida a electrovalvula para bajar la SUSP DELANTERA
+int EVSST = 7; // Salida a electrovalvula para subir la SUSP TRASERA
+int EVBST = 6; // Salida a electrovalvula para bajar la SUSP TRASERA
+//int BEEP = 12; //salida para pitido
+int CASO = 0;
+
+void setup()
+{
+pinMode(FM,INPUT);
+pinMode(SRD,INPUT); 
+pinMode(SRF,INPUT);
+pinMode(abrir,INPUT);
+pinMode(cerrar,INPUT);
+
+pinMode(SDAR,INPUT);
+pinMode(SDME,INPUT);
+pinMode(SDAB,INPUT);
+pinMode(STAR,INPUT);
+pinMode(STME,INPUT);
+pinMode(STAB,INPUT);
+
+//pinMode(PAR,INPUT);
+//pinMode(PME,INPUT);
+//pinMode(PAB,INPUT);
+
+pinMode(AR,OUTPUT);
+pinMode(CR,OUTPUT);
+pinMode(EVSSD,OUTPUT);
+pinMode(EVBSD,OUTPUT);
+pinMode(EVSST,OUTPUT);
+pinMode(EVBST,OUTPUT);  
+}
+
+void loop(){
+//digitalWrite(BEEP, LOW);
+
+if (digitalRead(FM) == LOW) 
+{    // abre if
+
+if (digitalRead(SRD) == LOW && digitalRead(abrir) == LOW){CASO = 1;}  //sube susp DEL hasta SDAR + Baja susp TRAS hasta STAB
+if (digitalRead(SRF) != LOW && digitalRead(abrir) == LOW && digitalRead(SDAR) == LOW && digitalRead(STAB) == LOW){CASO = 2;}  //ABRE RAMPA
+if (digitalRead(SRD) != LOW && digitalRead(cerrar) == LOW && digitalRead(SDME) == LOW && digitalRead(STME) == LOW ){CASO = 3;}  //CIERRA RAMPA
+if (digitalRead(SRF) == LOW && digitalRead(cerrar) == LOW && digitalRead(SDAR) == LOW && digitalRead(STAB) == LOW){CASO = 4;}  //baja susp DEL hasta SDME + sube susp TRAS hasta STME
+//if (digitalRead(SRD) == LOW && digitalRead(cerrar) == LOW && digitalRead(SDAR) == LOW && digitalRead(STAB) == LOW){CASO = 5;}  //SUBE SUSP TRAS hasta STME y BAJA SUSP DEL hasta SDME
+
+switch (CASO)
+{    //abre sw 
+
+case 1://-------------------> SUBE SUSP DEL hasta SDAR + BAJA SUSP TRAS hasta STAB 
+    while(digitalRead(SDAR) == HIGH)
+    {
+      digitalWrite(EVSSD, HIGH);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    
+    delay(50);
+    
+   while(digitalRead(STAB) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, HIGH);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    CASO=0;
+    delay(50); 
+ break;
+    
+ case 2://-------------------> ABRE RAMPA
+  //digitalWrite(BEEP, HIGH);
+  //delay(400);
+  //digitalWrite(BEEP, LOW);
+  while(digitalRead(SRF) == HIGH || digitalRead(abrir) == LOW)
+  {
+  digitalWrite(AR, HIGH);  //SE ABRE LA RAMPA
+  digitalWrite(CR, LOW);
+  }
+  digitalWrite(AR,LOW);  //no movemos la rampa
+  digitalWrite(CR,LOW);
+  //digitalWrite(BEEP, HIGH);
+  //delay(100);
+  //digitalWrite(BEEP, LOW);
+  CASO=0;
+  delay(50);
+break;   
+    
+case 3://-------------------> CIERRA RAMPA
+    //digitalWrite(BEEP, HIGH);
+    //delay(400);
+    //digitalWrite(BEEP, LOW);
+    while(digitalRead(SRD) == HIGH || digitalRead(cerrar) == LOW)  //hasta que la rampa se cierre del todo
+    {
+    digitalWrite(CR, HIGH);    //SE CIERRA LA RAMPA
+    digitalWrite(AR, LOW);
+    }
+    digitalWrite(CR,LOW);    //no movemos la rampa
+    digitalWrite(AR,LOW);
+    //digitalWrite(BEEP, HIGH);
+    //delay(100);
+    //digitalWrite(BEEP, LOW);
+    CASO=0;
+    delay(50);
+break;    
+    
+case 4://-------------------> SUBE SUSP TRAS hasta STME + BAJA SUSP DEL hasta SDME
+    while(digitalRead(STME) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, HIGH);
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    
+    delay(50);
+    
+    while(digitalRead(SDME) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, HIGH);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+     
+    CASO=0;
+    delay(50);
+break;
+
+}    //cierra sw
+}    //cierra if
+
+else  //Si el FRENO de MANO está QUITADO... ejecuta lo siguiente
+
+{    //abre else
+
+
+int analogValue = analogRead(susp); // Lee el valor de la entrada analógica A0
+analogValue = map(analogValue,0,1023,0,4); // Cambiamos el valor de rango
+switch (analogValue)
+    {    //abre sw 
+    case 1:    //CONMUTADOR SUSP posicion ARRIBA
+    PAR = 1;
+    PME = 0;
+    PAB = 0;
+    if (digitalRead(SDAR) != LOW)  //Si la SUSP DEL no esta arriba...
+    {
+    while(digitalRead(SDAR) == HIGH)
+    {
+      digitalWrite(EVSSD, HIGH);  //activa la electrovalvula de subir SUSP DEL
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }
+delay(50);    
+    if (digitalRead(STAR) != LOW)  //Si la SUSP TRAS no esta arriba...
+    {
+    while(digitalRead(STAR) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, HIGH);  //activa la electrovalvula de subir SUSP TRAS
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }  
+    delay(30);
+    break;
+
+    case 2:    //CONMUTADOR SUSP posicion en MEDIO
+    PAR = 0;
+    PME = 1;
+    PAB = 0;
+    if (digitalRead(SDAB) == LOW)  //Si la SUSP DEL esta abajo ...
+    {
+    while(digitalRead(SDME) != LOW)
+    {
+      digitalWrite(EVSSD, HIGH);  //activa la electrovalvula de subir SUSP DEL hasta el MEDIO
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }
+delay(50);
+    if (digitalRead(STAB) == LOW)  //Si la SUSP TRAS esta abajo ...
+    {
+    while(digitalRead(STME) != LOW)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, HIGH);  //activa la electrovalvula de subir SUSP TRAS
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }  
+delay(50);
+    
+    if (digitalRead(STAR) == LOW)  //Si la SUSP TRAS esta arriba ...
+    {
+    while(digitalRead(STME) != LOW)
+    {
+      digitalWrite(EVSSD, LOW);  
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, HIGH);  //activa la electrovalvula de bajar SUSP TRAS hasta el MEDIO
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }
+    delay(50);
+    if (digitalRead(SDAR) == LOW)  //Si la SUSP DEL esta arriba ...
+    {
+    while(digitalRead(SDME) != LOW)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, HIGH);  //activa la electrovalvula de bajar SUSP DEL hasta el MEDIO
+      digitalWrite(EVSST, LOW);  
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }  
+    delay(30);
+    break;
+    
+    case 3:
+    PAR = 0;
+    PME = 0;
+    PAB = 1;
+    if (digitalRead(STAB) != LOW)  //Si la SUSP TRAS no esta abajo...
+    {
+    while(digitalRead(STAB) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);  
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, HIGH);  //activa la electrovalvula de bajar SUSP TRAS
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }
+delay(50);    
+    if (digitalRead(SDAB) != LOW)  //Si la SUSP DEL no esta abajo ...
+    {
+    while(digitalRead(SDAB) == HIGH)
+    {
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, HIGH);  //activa la electrovalvula de bajar SUSP DEL
+      digitalWrite(EVSST, LOW); 
+      digitalWrite(EVBST, LOW);
+    }
+      digitalWrite(EVSSD, LOW);
+      digitalWrite(EVBSD, LOW);
+      digitalWrite(EVSST, LOW);
+      digitalWrite(EVBST, LOW); 
+    }  
+    delay(30);
+    break;
+    }    //cierra sw
+
+
+
+
+  
+//}    //cierra else
+
+
+}
+}//void loop
